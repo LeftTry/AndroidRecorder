@@ -4,25 +4,28 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.media.AudioRecordingConfiguration;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.util.Log;
-import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -30,8 +33,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private static String fileName = null;
 
-    private RecordButton recordButton = null;
     private MediaRecorder recorder = null;
+    private Recorder testRecorder;
+    public Button record;
 
     private PlayButton   playButton = null;
     private MediaPlayer   player = null;
@@ -43,21 +47,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode){
-            case REQUEST_RECORD_AUDIO_PERMISSION:
-                permissionToRecordAccepted  = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                break;
+        if (requestCode == REQUEST_RECORD_AUDIO_PERMISSION) {
+            permissionToRecordAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
         }
         if (!permissionToRecordAccepted ) finish();
 
     }
 
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
     private void onRecord(boolean start) {
         if (start) {
             startRecording();
-        } else {
-            stopRecording();
         }
+
     }
 
     private void onPlay(boolean start) {
@@ -84,57 +87,34 @@ public class MainActivity extends AppCompatActivity {
         player = null;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
+
     private void startRecording() {
-        recorder = new MediaRecorder();
-        recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-        recorder.setOutputFile(fileName);
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+        testRecorder = new Recorder();
+        testRecorder.Start();
+        record = findViewById(R.id.recordButton);
+        record.setClickable(false);
         try {
-            
-            Log.d(LOG_TAG, "Metircs: " + metrics);
-            recorder.prepare();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "prepare() failed");
+            testRecorder.getNoiseLevel();
+            record.setClickable(true);
+        } catch (Recorder.NoValidNoiseLevelException e) {
+            e.printStackTrace();
         }
-
-        recorder.start();
     }
 
-    private void stopRecording() {
-        recorder.stop();
-        recorder.release();
-        recorder = null;
-    }
-
-    class RecordButton extends AppCompatButton {
         boolean mStartRecording = true;
 
-        OnClickListener clicker = new OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @SuppressLint("SetTextI18n")
             public void onClick(View v) {
                 onRecord(mStartRecording);
-                if (mStartRecording) {
-                    setText("Stop recording");
-                } else {
-                    setText("Start recording");
-                }
-                mStartRecording = !mStartRecording;
             }
-        };
 
-        public RecordButton(Context ctx) {
-            super(ctx);
-            setText("Start recording");
-            setOnClickListener(clicker);
-        }
-    }
 
     class PlayButton extends AppCompatButton {
         boolean mStartPlaying = true;
 
         OnClickListener clicker = new OnClickListener() {
+            @SuppressLint("SetTextI18n")
             public void onClick(View v) {
                 onPlay(mStartPlaying);
                 if (mStartPlaying) {
@@ -146,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        @SuppressLint("SetTextI18n")
         public PlayButton(Context ctx) {
             super(ctx);
             setText("Start playing");
@@ -155,35 +136,29 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-
+        setContentView(R.layout.activity_main);
         // Record to the external cache directory for visibility
-    fileName = getExternalCacheDir().getAbsolutePath();
-    fileName += "/audiorecordtest.3gp";
-
+    fileName = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath();
+        EditText filename = findViewById(R.id.filename);
+            fileName += "/" + filename.getText() + ".wav";
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
-
-    LinearLayout ll = new LinearLayout(this);
-    recordButton = new RecordButton(this);
-        ll.addView(recordButton,
-            new LinearLayout.LayoutParams(
-    ViewGroup.LayoutParams.WRAP_CONTENT,
-    ViewGroup.LayoutParams.WRAP_CONTENT,
-            0));
+/*
+    RelativeLayout ll = findViewById(R.id.mainLayout);
     playButton = new PlayButton(this);
         ll.addView(playButton,
             new LinearLayout.LayoutParams(
     ViewGroup.LayoutParams.WRAP_CONTENT,
     ViewGroup.LayoutParams.WRAP_CONTENT,
             0));
-    setContentView(ll);
+ */
 }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (recorder != null) {
-            recorder.release();
-            recorder = null;
+        if (testRecorder != null) {
+            testRecorder.Release();
+            testRecorder = null;
         }
 
         if (player != null) {
