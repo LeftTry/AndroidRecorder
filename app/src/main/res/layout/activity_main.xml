@@ -18,6 +18,17 @@
         android:layout_marginTop="140dp"
         />
 
+    <TextView
+        android:id="@+id/indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerInParent="true"
+        android:textColor="#EB2929"
+        android:visibility="invisible"
+        android:text="@string/recording"
+        tools:ignore="RelativeOverlap" />
+
     <EditText
         android:id="@+id/filename"
         android:layout_width="wrap_content"

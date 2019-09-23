@@ -10,32 +10,34 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
-import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String LOG_TAG = "AudioRecordTest";
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
     private static String fileName = null;
+    @SuppressLint("StaticFieldLeak")
+    public static TextView recordText;
 
     private MediaRecorder recorder = null;
     private Recorder testRecorder;
     public Button record;
+    @SuppressLint("StaticFieldLeak")
+    public static EditText filename;
+    public static Animation anim;
 
     private PlayButton   playButton = null;
     private MediaPlayer   player = null;
@@ -60,6 +62,9 @@ public class MainActivity extends AppCompatActivity {
         if (start) {
             startRecording();
         }
+    }
+
+    private void stopRecording() {
 
     }
 
@@ -89,8 +94,16 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void startRecording() {
-        testRecorder = new Recorder();
+        testRecorder = new Recorder(this);
         testRecorder.Start();
+        recordText = findViewById(R.id.indicator);
+        recordText.setVisibility(View.VISIBLE);
+        anim = new AlphaAnimation(0.0f, 1.0f);
+        anim.setDuration(200); //You can manage the time of the blink with this parameter
+        anim.setStartOffset(20);
+        anim.setRepeatMode(Animation.REVERSE);
+        anim.setRepeatCount(Animation.INFINITE);
+        recordText.startAnimation(anim);
         record = findViewById(R.id.recordButton);
         record.setClickable(false);
         try {
@@ -113,17 +126,15 @@ public class MainActivity extends AppCompatActivity {
     class PlayButton extends AppCompatButton {
         boolean mStartPlaying = true;
 
-        OnClickListener clicker = new OnClickListener() {
-            @SuppressLint("SetTextI18n")
-            public void onClick(View v) {
-                onPlay(mStartPlaying);
-                if (mStartPlaying) {
-                    setText("Stop playing");
-                } else {
-                    setText("Start playing");
-                }
-                mStartPlaying = !mStartPlaying;
+        @SuppressLint("SetTextI18n")
+        OnClickListener clicker = v -> {
+            onPlay(mStartPlaying);
+            if (mStartPlaying) {
+                setText("Stop playing");
+            } else {
+                setText("Start playing");
             }
+            mStartPlaying = !mStartPlaying;
         };
 
         @SuppressLint("SetTextI18n")
@@ -137,20 +148,8 @@ public class MainActivity extends AppCompatActivity {
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         setContentView(R.layout.activity_main);
-        // Record to the external cache directory for visibility
-    fileName = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath();
-        EditText filename = findViewById(R.id.filename);
-            fileName += "/" + filename.getText() + ".wav";
+        filename = findViewById(R.id.filename);
         ActivityCompat.requestPermissions(this, permissions, REQUEST_RECORD_AUDIO_PERMISSION);
-/*
-    RelativeLayout ll = findViewById(R.id.mainLayout);
-    playButton = new PlayButton(this);
-        ll.addView(playButton,
-            new LinearLayout.LayoutParams(
-    ViewGroup.LayoutParams.WRAP_CONTENT,
-    ViewGroup.LayoutParams.WRAP_CONTENT,
-            0));
- */
 }
 
     @Override
